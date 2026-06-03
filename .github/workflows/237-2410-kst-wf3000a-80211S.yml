@@ -84,11 +84,15 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    - name: Fix Rust compile error
+    # ===================== 【修复 Rust 报错核心代码】 =====================
+    - name: Fix Rust compile error (Cargo.toml.orig missing)
       run: |
         cd openwrt
+        rm -rf build_dir/target-aarch64_cortex-a53_musl/host/rustc-*
+        rm -rf dl/cargo dl/rust*
         sed -i 's/CONFIG_PACKAGE_rust=y/# CONFIG_PACKAGE_rust is not set/' .config
         sed -i 's/CONFIG_PACKAGE_cargo=y/# CONFIG_PACKAGE_cargo is not set/' .config
+    # ====================================================================
 
     - name: Download package
       id: package
