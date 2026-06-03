@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: Build 237-24.10 KST-WF3000A
+name: Build 237-24.10 KST-WF3000A-80211s
 
 on:
   repository_dispatch:
