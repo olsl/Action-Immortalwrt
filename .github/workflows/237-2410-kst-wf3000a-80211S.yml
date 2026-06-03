@@ -76,7 +76,7 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds install -a 
-        
+         
          
     - name: Load custom configuration
       run: |
@@ -85,6 +85,13 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    # ========== 【关键修复：自动禁用 Rust / Cargo】 ==========
+    - name: Fix Rust compile error
+      run: |
+        cd openwrt
+        sed -i 's/CONFIG_PACKAGE_rust=y/# CONFIG_PACKAGE_rust is not set/' .config
+        sed -i 's/CONFIG_PACKAGE_cargo=y/# CONFIG_PACKAGE_cargo is not set/' .config
 
     - name: Download package
       id: package
@@ -144,7 +151,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/gh-release@v2
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
