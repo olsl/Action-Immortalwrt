@@ -84,14 +84,12 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    # ===================== 【已修复 Rust 报错】 =====================
+    # ===================== 【修复 Rust 编译报错】 =====================
     - name: Fix Rust compile error (Cargo.toml.orig missing)
       run: |
         cd openwrt
-        # 强制清理损坏的 Rust 编译缓存
         rm -rf build_dir/target-aarch64_cortex-a53_musl/host/rustc-*
         rm -rf dl/rust* dl/cargo*
-        # 强制禁用 Rust、cargo、所有依赖项（100% 解决报错）
         cat >> .config << EOF
         CONFIG_PACKAGE_rust=n
         CONFIG_PACKAGE_rust-host=n
@@ -99,7 +97,7 @@ jobs:
         CONFIG_PACKAGE_libruststd=n
         EOF
         make defconfig
-    # ==============================================================
+    # =================================================================
 
     - name: Download package
       id: package
@@ -157,8 +155,9 @@ jobs:
         touch 2410-release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
+    # ===================== 【修复 action-gh-release 版本】 =====================
     - name: Upload firmware to release
-      uses: softprops/action-gh-release@2
+      uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -166,6 +165,7 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: 2410-release.txt
         files: ${{ env.FIRMWARE }}/*
+    # ==========================================================================
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
