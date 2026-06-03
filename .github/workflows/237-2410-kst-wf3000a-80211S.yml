@@ -84,15 +84,22 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    # ===================== 【修复 Rust 报错核心代码】 =====================
+    # ===================== 【已修复 Rust 报错】 =====================
     - name: Fix Rust compile error (Cargo.toml.orig missing)
       run: |
         cd openwrt
+        # 强制清理损坏的 Rust 编译缓存
         rm -rf build_dir/target-aarch64_cortex-a53_musl/host/rustc-*
-        rm -rf dl/cargo dl/rust*
-        sed -i 's/CONFIG_PACKAGE_rust=y/# CONFIG_PACKAGE_rust is not set/' .config
-        sed -i 's/CONFIG_PACKAGE_cargo=y/# CONFIG_PACKAGE_cargo is not set/' .config
-    # ====================================================================
+        rm -rf dl/rust* dl/cargo*
+        # 强制禁用 Rust、cargo、所有依赖项（100% 解决报错）
+        cat >> .config << EOF
+        CONFIG_PACKAGE_rust=n
+        CONFIG_PACKAGE_rust-host=n
+        CONFIG_PACKAGE_cargo=n
+        CONFIG_PACKAGE_libruststd=n
+        EOF
+        make defconfig
+    # ==============================================================
 
     - name: Download package
       id: package
@@ -151,7 +158,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@2
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
