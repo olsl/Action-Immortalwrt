@@ -35,8 +35,6 @@ sed -i 's/^CONFIG_TIMEZONE=.*$/CONFIG_TIMEZONE="CST-8"/' .config
 echo ">> 已将默认时区修改为 CST-8（北京时间）"
 
 # 6. 重新生成依赖关系
-./scripts/feeds update -a
-./scripts/feeds install -a
 make defconfig
 echo ">> 已重新生成依赖关系"
 
