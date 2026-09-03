@@ -29,21 +29,9 @@ cp -f target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek/mt7981.dtsi t
 # This macro is used by mtk_eth_soc.c but missing in 6.6 kernel headers
 sed -i '/#define MTK_FE_RESET_NAT_DONE/a #define HIT_BIND_FORCE_TO_CPU 0x16' target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/mtk_eth_reset.h
 
-# Fix: add missing #include "mtk_eth_reset.h" to mtk_eth_soc.c via kernel patch
-# 6 private macros (MTK_FE_START_RESET etc.) are defined in mtk_eth_reset.h
-# but mtk_eth_soc.c does not include this header, causing compile failure.
-# mtk_eth_soc.c is a kernel source file, not present at diy-part1 time,
-# so we must use a kernel patch instead of direct sed.
-mkdir -p target/linux/mediatek/patches-6.6
-cat > target/linux/mediatek/patches-6.6/9999-fix-mtk-eth-reset-include.patch << 'PATCH_EOF'
---- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-+++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -30,6 +30,7 @@
- #include <net/page_pool/helpers.h>
- 
- #include "mtk_eth_soc.h"
- #include "mtk_wed.h"
-+#include "mtk_eth_reset.h"
- 
- static int mtk_msg_level = -1;
-PATCH_EOF
+# Fix: add #include "mtk_eth_reset.h" to mtk_eth_dbg.h
+# mtk_eth_soc.c already includes mtk_eth_dbg.h (added by 999-2705 patch),
+# so adding the include here transitively makes mtk_eth_reset.h available
+# to mtk_eth_soc.c, resolving 6 undefined macros (MTK_FE_START_RESET etc.)
+# without needing a fragile kernel patch against a heavily-patched file.
+sed -i '/#define MTK_ETH_DBG_H/a #include "mtk_eth_reset.h"' target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/mtk_eth_dbg.h
