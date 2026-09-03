@@ -24,3 +24,12 @@
 mkdir -p target/linux/mediatek/dts/mediatek
 cp -f target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek/mt7981-kst-wf3000a.dts target/linux/mediatek/dts/mediatek/
 cp -f target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek/mt7981.dtsi target/linux/mediatek/dts/mediatek/
+
+# Fix: add missing HIT_BIND_FORCE_TO_CPU define to mtk_eth_reset.h
+# This macro is used by mtk_eth_soc.c but missing in 6.6 kernel headers
+sed -i '/#define MTK_FE_RESET_NAT_DONE/a #define HIT_BIND_FORCE_TO_CPU 0x16' target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/mtk_eth_reset.h
+
+# Fix: add missing #include "mtk_eth_reset.h" to mtk_eth_soc.c
+# 6 private macros (MTK_FE_START_RESET etc.) are defined in mtk_eth_reset.h
+# but mtk_eth_soc.c does not include this header, causing compile failure
+sed -i '/#include "mtk_ppe.h"/a #include "mtk_eth_reset.h"' drivers/net/ethernet/mediatek/mtk_eth_soc.c
