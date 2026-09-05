@@ -1,0 +1,8 @@
+KJD KJ30-N (MT7981B) 固件
+
+源码: dailook/immortalwrt-mt798x-6.6 (openwrt-24.10-6.6, 内核 6.6)
+设备: mt7981b-kjd-kj30-n (256MB, SPI-NAND, MT7531)
+
+刷机说明:
+- factory.bin: 用于 U-Boot / 编程器 / 原厂升级界面刷入
+- sysupgrade.bin: 用于已运行的 OpenWrt 系统内升级
