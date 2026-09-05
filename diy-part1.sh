@@ -10,10 +10,33 @@
 # See /LICENSE for more information.
 #
 
-# Uncomment a feed source
-# sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
+# Add KST WF3000A device support for ImmortalWrt mainline (mt76)
 
-# Add a feed source
-# echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
-# echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
-# echo 'src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages' >>feeds.conf.default
+# 1. Copy device DTS into the source tree
+cp $GITHUB_WORKSPACE/mt7981b-kst-wf3000a.dts target/linux/mediatek/dts/
+
+# 2. Append device definition to filogic.mk
+cat >> target/linux/mediatek/image/filogic.mk <<'EOF'
+
+define Device/kst_wf3000a
+  DEVICE_VENDOR := KST
+  DEVICE_MODEL := WF3000A
+  DEVICE_DTS := mt7981b-kst-wf3000a
+  DEVICE_DTS_DIR := ../dts
+  SUPPORTED_DEVICES += kst,wf3000a
+  DEVICE_PACKAGES := kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware
+  UBINIZE_OPTS := -E 5
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  IMAGE_SIZE := 116736k
+  KERNEL_IN_UBI := 1
+  IMAGES += factory.bin
+  IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+  KERNEL = kernel-bin | lzma | \
+	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
+  KERNEL_INITRAMFS = kernel-bin | lzma | \
+	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd
+endef
+TARGET_DEVICES += kst_wf3000a
+EOF
