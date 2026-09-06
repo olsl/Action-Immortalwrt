@@ -1,6 +1,9 @@
 #!/bin/bash
 # DIY part 2 for KST WF3000A (ct3003-based, 5.4 kernel)
 
+# Remove rust toolchain (rustc-1.94.0 has checksum build failure, not needed for selected packages)
+rm -rf feeds/packages/lang/rust
+
 # Modify default IP
 sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
