@@ -21,21 +21,22 @@ INT wtbl_update_pwr_offset(struct _RTMP_ADAPTER *pAd, struct wifi_dev *wdev);\
 #endif' $MT_WIFI_DIR/$f
 done
 
-# Fix mt_wifi sta.c 'ENUM_AHDBUG_L1_TX' undeclared
-# (2410 分支源码缺陷：sta.c:2997 ApCliIfMonitor 的 beacon-loss 分支调用
-# ops->hw_auto_debug_trigger(pAd, band_idx, ENUM_AHDBUG_L1_TX, 0)。
-# 该枚举定义于 include/mac/mac_mt/fmac/mt_fmac.h（第 25-36 行，无条件定义，
-# 不受任何配置开关保护），但 sta.c 仅 include rt_config.h，其 include 链
-# 不含该头文件，启用 CONFIG_APCLI_SUPPORT 后即触发 undeclared 编译错误。
-# 该回调在 chips/mt7981.c:12384 为无条件注册（不在 WF_RESET_SUPPORT/
-# ERR_RECOVERY 块内），运行时确实会执行，故补 include 而非屏蔽调用。
-# 写法与 embedded/common/sr_cmd.c:22 一致；头文件有 __MT_FMAC_H__ 保护宏，
-# 依赖的 fmac_txd.h/fmac_rxd.h/txpwr.h 均存在，且 -I.../mt_wifi/include
-# 已在搜索路径中，不影响其他文件)
-STA_C=$MT_WIFI_DIR/embedded/sta/sta.c
-if grep -q "ENUM_AHDBUG_L1_TX" $STA_C && ! grep -q 'mac/mac_mt/fmac/mt_fmac.h' $STA_C; then
-  sed -i '/^#include "rt_config.h"/a #include "mac/mac_mt/fmac/mt_fmac.h"' $STA_C
-fi
+# Fix mt_wifi ENUM_AHDBUG_L1_* undeclared
+# (2410 分支源码缺陷：sta.c:2997、chips/mt7981_dbg.c:1340、chips/mt7986_dbg.c:1388、
+# embedded/mcu/andes_core.c:974 均引用定义于 include/mac/mac_mt/fmac/mt_fmac.h
+# （第 25-36 行枚举 _ENUM_AHDBG_L1_INDEX_T，无条件定义）的 ENUM_AHDBUG_* 枚举，
+# 但各文件仅 include rt_config.h，其 include 链不含该头文件。
+# mt_wifi_ap/Makefile 中 mt7981_dbg.o、mt7986_dbg.o、andes_core.o 均无条件加入
+# chip_objs（不按芯片条件隔离），故 4 个文件必须一并补 include，否则编译到此
+# 即触发 undeclared 错误。头文件有 __MT_FMAC_H__ 保护宏，依赖的
+# fmac_txd.h/fmac_rxd.h/txpwr.h 均存在，且 -I.../mt_wifi/include 已在搜索路径中，
+# 不影响其他文件)
+MT_WIFI_DIR=package/mtk/drivers/mt_wifi/src/mt_wifi
+for f in embedded/sta/sta.c chips/mt7981_dbg.c chips/mt7986_dbg.c embedded/mcu/andes_core.c; do
+  if grep -q "ENUM_AHDBUG" $MT_WIFI_DIR/$f && ! grep -q 'mac/mac_mt/fmac/mt_fmac.h' $MT_WIFI_DIR/$f; then
+    sed -i '/^#include "rt_config.h"/a #include "mac/mac_mt/fmac/mt_fmac.h"' $MT_WIFI_DIR/$f
+  fi
+done
 
 
 # Modify filename, add date prefix
