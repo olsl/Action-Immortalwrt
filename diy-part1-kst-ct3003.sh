@@ -32,3 +32,13 @@ EOF
 
 # 3. Add OpenClash
 git clone --depth=1 https://github.com/vernesong/OpenClash.git package/openclash
+
+# 4. Fix mt_wifi sec_cmm.h: pwd_id_list/sae_capability/sae_pk_cfg referenced but
+#    only defined when SUPP_SAE_SUPPORT is set -> incomplete type build error in warp_proxy
+SEC_CMM=package/mtk/drivers/mt_wifi/src/mt_wifi/embedded/include/security/sec_cmm.h
+if [ -f "$SEC_CMM" ]; then
+    sed -i '/#ifdef SUPP_SAE_SUPPORT/,+2c#include "security\/sae_cmm.h"' "$SEC_CMM"
+    echo "[fix] sec_cmm.h patched: unconditional include of sae_cmm.h"
+else
+    echo "[warn] sec_cmm.h not found at $SEC_CMM"
+fi
