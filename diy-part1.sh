@@ -14,6 +14,7 @@
 
 # 1. Copy device DTS into the source tree
 cp $GITHUB_WORKSPACE/mt7981b-kst-wf3000a.dts target/linux/mediatek/dts/
+cp $GITHUB_WORKSPACE/mt7981b-kst-wf3000a.dtsi target/linux/mediatek/dts/
 
 # 2. Append device definition to filogic.mk
 cat >> target/linux/mediatek/image/filogic.mk <<'EOF'
