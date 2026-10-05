@@ -22,3 +22,18 @@ sed -i '$a\\sleep 3' package/network/services/ppp/files/lib/netifd/ppp-down
 echo 'net.netfilter.nf_conntrack_buckets=65536' >>package/kernel/linux/files/sysctl-nf-conntrack.conf
 echo 'net.netfilter.nf_conntrack_expect_max=16384' >>package/kernel/linux/files/sysctl-nf-conntrack.conf
 echo 'net.netfilter.nf_conntrack_max=100000' >>package/kernel/linux/files/sysctl-nf-conntrack.conf
+
+# ---------------------------------------------------------------------------
+# 保险：强制 warp 驱动版本 = 2
+# 配置文件里本来就有 CONFIG_WARP_VERSION=2，但如果那份 .config 被存成 \r\n / \r\r\n，
+# kconfig 会把值读成 "2\r" 判为无效并退回默认 1；版本 1 去编 regs/reg_v1/warp_hw_v1.c，
+# 与 mt7981 这套寄存器头文件（WED_WDMA_* / WDMA_*_FLD_*）对不上，会爆 73 个
+# "undeclared identifier" 直接编译失败。这里用干净行尾补一行，兜底。
+# ---------------------------------------------------------------------------
+if grep -qx 'CONFIG_WARP_VERSION=2' .config; then
+    echo "==> [WMA301] CONFIG_WARP_VERSION=2 已存在，无需处理"
+else
+    echo 'CONFIG_WARP_VERSION=2' >>.config
+    echo "==> [WMA301] 已补写 CONFIG_WARP_VERSION=2"
+fi
+grep -n '^CONFIG_WARP_VERSION' .config
