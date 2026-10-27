@@ -25,6 +25,11 @@
 	compatible = "hoolxun,yyets-le2", "mediatek,mt7621-soc";
 	model = "HOELXUN YYETs-LE2";
 
+	// 串口波特率统一 115200（fork 的 mt7621.dtsi 默认 57600，此处覆盖）
+	chosen {
+		bootargs = "console=ttyS0,115200";
+	};
+
 	aliases {
 		led-boot = &led_status;
 		led-failsafe = &led_status;
@@ -102,6 +107,7 @@
 			partition@50000 {
 				label = "firmware";
 				reg = <0x50000 0x1fb0000>;
+				linux,rootfs;
 			};
 		};
 	};
