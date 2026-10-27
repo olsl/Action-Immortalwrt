@@ -1,0 +1,18 @@
+YYETs-LE2 ImmortalWrt 24.10 (kernel 6.6) 固件
+
+设备: HOELXUN YYETs-LE2 (MT7621AT / 512MB DDR3 / 32MB SPI NOR / 2x MT7612E)
+源码: olsl/immortalwrt-mt798x-6.6 (openwrt-24.10-6.6)
+
+内置功能:
+- 板载双 MT7612E 无线 (eeprom 校准已按 factory.bin 定稿)
+- USB3.0/2.0 + U 盘存储 (exfat/vfat/ext4/ntfs3)
+- USB 无线网卡: RTL8188EU (kmod-rtl8188eu) / RT5572 (kmod-rt2800-usb)
+- 手机 USB 网络共享 / 随身 WiFi (rndis/ecm/eem/mbim/ipheth + usb-modeswitch)
+- 无线中继 (relayd)
+- WireGuard 组网 (kmod-wireguard + luci-proto-wireguard)
+- 无线抓包 (aircrack-ng / tcpdump / horst / iw)
+- 软件流量分载 (kmod-nf-flow)
+- LuCI 界面: Argon 主题
+- 默认地址: 192.168.8.1
+
+刷机: 仅刷 firmware 分区，保留 factory 分区 (含无线 eeprom)
