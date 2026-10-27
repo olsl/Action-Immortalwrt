@@ -32,10 +32,8 @@
 		label-mac-device = &gmac0;
 	};
 
-	memory@0 {
-		device_type = "memory";
-		reg = <0x0 0x0 0x0 0x20000000>; // 512MB
-	};
+	// 512MB 内存不写 memory 节点，由 MT7621 芯片 mem_detect 自动检测（与官方 325 个 mt7621 设备一致）
+	// 注意：root #address-cells=1，若写 reg=<0x0 0x0 0x0 0x20000000> 会解析成两对(addr,size)导致 syscon panic
 
 	leds {
 		compatible = "gpio-leds";
