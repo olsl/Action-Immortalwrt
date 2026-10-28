@@ -20,7 +20,7 @@ define Device/hoolxun_yyets-le2
   DEVICE_MODEL := YYETs-LE2
   DEVICE_DTS := mt7621_hoolxun_yyets_le2
   IMAGE_SIZE := 32448k
-  DEVICE_PACKAGES := kmod-mt76x2 kmod-rtl8188eu kmod-rt2800-usb \
+  DEVICE_PACKAGES := kmod-mt76x2 kmod-mt7603 kmod-rtl8188eu kmod-rt2800-usb \
 	kmod-usb3 kmod-usb2 kmod-usb-storage kmod-fs-exfat kmod-fs-vfat \
 	kmod-fs-ext4 kmod-fs-ntfs3 block-mount usbutils \
 	kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether \
