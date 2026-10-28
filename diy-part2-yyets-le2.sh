@@ -32,4 +32,21 @@ exit 0
 EOF
 chmod +x files/etc/uci-defaults/99-yyets-8188eu
 
-echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载"
+# 端口严谨性：dts 已禁用 port0/1（lan4/lan3），升级保留配置时清理残留引用，LUCI 不再显示
+cat > files/etc/uci-defaults/98-yyets-ports <<'EOF'
+#!/bin/sh
+# 清理 dts 已禁用端口在旧配置中的残留（network 接口 + br-lan 桥端口）
+for p in lan3 lan4; do
+	uci -q delete network.$p
+	i=0
+	while uci -q get network.@device[$i].name >/dev/null 2>&1; do
+		uci -q del_list network.@device[$i].ports="$p"
+		i=$((i+1))
+	done
+done
+uci -q commit network
+exit 0
+EOF
+chmod +x files/etc/uci-defaults/98-yyets-ports
+
+echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载 / 端口残留清理
