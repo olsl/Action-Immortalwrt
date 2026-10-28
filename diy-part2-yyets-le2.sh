@@ -58,4 +58,4 @@ exit 0
 EOF
 chmod +x files/etc/uci-defaults/98-yyets-ports
 
-echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载 / 端口残留清理
+echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载 / 端口残留清理"
