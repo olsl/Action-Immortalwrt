@@ -32,6 +32,15 @@ exit 0
 EOF
 chmod +x files/etc/uci-defaults/99-yyets-8188eu
 
+# 端口严谨性：board.d 覆盖 board.json（物理 1WAN+2LAN），DSA 自动枚举的 4 LAN 在此修正
+mkdir -p files/etc/board.d
+cat > files/etc/board.d/99-yyets-ports <<'EOF'
+#!/bin/sh
+# YYETs-LE2 物理 1WAN+2LAN：lan1/lan2 为 LAN，wan 为 WAN
+ucidef_set_interfaces_lan_wan "lan1 lan2" "wan"
+EOF
+chmod +x files/etc/board.d/99-yyets-ports
+
 # 端口严谨性：dts 已禁用 port0/1（lan4/lan3），升级保留配置时清理残留引用，LUCI 不再显示
 cat > files/etc/uci-defaults/98-yyets-ports <<'EOF'
 #!/bin/sh
