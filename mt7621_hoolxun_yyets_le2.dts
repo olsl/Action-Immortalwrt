@@ -154,16 +154,16 @@
 	nvmem-cell-names = "mac-address";
 };
 
-// 全 5 口走 MT7530 switch（与同规格 newifi-d2 一致）：port0-3=LAN，port4=WAN
+// 物理 1WAN+2LAN（实测 carrier：lan1=port3 / lan2=port2 为真口，port0/1 无物理口禁用）
 &switch0 {
 	ports {
 		port@0 {
-			status = "okay";
+			status = "disabled";
 			label = "lan4";
 		};
 
 		port@1 {
-			status = "okay";
+			status = "disabled";
 			label = "lan3";
 		};
 
