@@ -95,6 +95,14 @@
 				#address-cells = <1>;
 				#size-cells = <1>;
 
+				eeprom_factory_0: eeprom@0 {
+					reg = <0x0 0x400>; // 2.4G eeprom, MAC 0C:EF:AF:B3:04:61
+				};
+
+				eeprom_factory_8000: eeprom@8000 {
+					reg = <0x8000 0x400>; // 5G eeprom, MAC 0C:EF:AF:B3:04:62
+				};
+
 				macaddr_factory_2c: macaddr@2c {
 					reg = <0x2c 0x6>; // LAN MAC 0C:EF:AF:B3:04:5F
 				};
@@ -113,13 +121,18 @@
 	};
 };
 
+&pcie {
+	status = "okay";
+};
+
 &pcie0 {
 	status = "okay";
 
 	wifi@0,0 {
 		compatible = "mediatek,mt7612e";
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x0>;      // eeprom#1, MAC 0C:EF:AF:B3:04:61
+		nvmem-cells = <&eeprom_factory_0>;
+		nvmem-cell-names = "eeprom";
 	};
 };
 
@@ -129,7 +142,8 @@
 	wifi@0,0 {
 		compatible = "mediatek,mt7612e";
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x8000>;   // eeprom#2, MAC 0C:EF:AF:B3:04:62
+		nvmem-cells = <&eeprom_factory_8000>;
+		nvmem-cell-names = "eeprom";
 	};
 };
 
