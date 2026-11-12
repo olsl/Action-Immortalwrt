@@ -105,7 +105,6 @@ chmod +x files/etc/uci-defaults/99-yyets-ssh
 cat > files/etc/sysupgrade.conf <<'EOF'
 # 自定义保留：wifi-relay 定制页 + 首页温度 + 端口修正 + 中继脚本
 /etc/wireguard
-/etc/hotplug.d/iface/90-wg-endpoint
 /root
 /etc/board.json
 /sbin/tempinfo
@@ -119,82 +118,5 @@ cat > files/etc/sysupgrade.conf <<'EOF'
 /usr/share/rpcd/acl.d/luci-wifi-relay.json
 /usr/share/luci/menu.d/luci-app-wifi-relay.json
 EOF
-
-# ---- WireGuard 联网自愈: 网络一通就恢复（刷机/换网后不再需要手动修 wg） ----
-mkdir -p files/etc/wireguard files/etc/hotplug.d/iface
-cat > files/etc/wireguard/update_wg_endpoint.sh <<'WGW'
-#!/bin/sh
-# 8.1 (HOELXUN YYETs-LE2) spoke: 动态 endpoint 选择
-# 原则: 能通就用, 不管怎么联网
-#   场景A 中继/内网(任一 STA 上行拿到 192.168.6.x): 直连 192.168.6.1:51820
-#          (2.4G 走 phy0-sta0、5G 走 phy1-sta0 都按实际持有的接口判定)
-#   场景B 异地(公网): 用 TXT(360t7wg.olsl.cc.cd) 的 lucky 打洞映射
-PEER_PUB='sbMVivgp63nX/coj1SfIMU3OKvMlBxbEjv24QT/bS0A='
-DNS='223.5.5.5'
-DOMAIN='360t7wg.olsl.cc.cd'
-HUB_LAN='192.168.6.1'
-HUB_PORT='51820'
-
-# 接口没起来就先拉起 (开机/重连后 netifd 可能尚未拉起 wg0)
-ip link show wg0 >/dev/null 2>&1 || ifup wg0
-
-# --- 找出承载 192.168.6.x 的上行接口: 2.4G/5G 中继都适用 ---
-LANIF=""
-for i in $(ls /sys/class/net 2>/dev/null); do
-	case "$i" in
-		phy*-sta0|wwan*|usb*) ;;
-		*) continue ;;
-	esac
-	if ip -4 addr show "$i" 2>/dev/null | grep -q 'inet 192\.168\.6\.'; then
-		LANIF="$i"
-		break
-	fi
-done
-
-# --- 场景A: 有 6.x 上行且 hub 可达 ---
-if [ -n "$LANIF" ]; then
-	# 维护直连主机路由: 覆盖 wg0 的 192.168.6.0/24 隧道路由, 防止流量进死隧道
-	ip route replace "$HUB_LAN/32" dev "$LANIF" 2>/dev/null || \
-		ip route add "$HUB_LAN/32" dev "$LANIF" 2>/dev/null
-	if ping -c 1 -W 2 "$HUB_LAN" >/dev/null 2>&1; then
-		wg set wg0 peer "$PEER_PUB" endpoint "$HUB_LAN:$HUB_PORT"
-		logger -t wg-update "endpoint -> lan $HUB_LAN:$HUB_PORT (via $LANIF)"
-		exit 0
-	fi
-	logger -t wg-update "上行 $LANIF 有 6.x 地址但 hub 不通, 转公网分支"
-fi
-
-# --- 场景B: 异地/公网, 用 TXT 打洞映射 (无 dig 时用 busybox nslookup) ---
-if command -v dig >/dev/null 2>&1; then
-	EP=$(dig +short TXT "$DOMAIN" @"$DNS" 2>/dev/null | tr -d '"')
-else
-	EP=$(nslookup -type=TXT "$DOMAIN" "$DNS" 2>/dev/null | sed -n 's/.*text *= *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/p' | head -n 1)
-fi
-[ -z "$EP" ] && { logger -t wg-update "取不到公网 endpoint, 保持现状"; exit 0; }
-CUR=$(wg show wg0 endpoints 2>/dev/null | grep "$PEER_PUB" | awk '{print $2}')
-if [ -z "$CUR" ] || [ "$EP" != "$CUR" ]; then
-	wg set wg0 peer "$PEER_PUB" endpoint "$EP"
-	logger -t wg-update "endpoint -> $EP (was: $CUR)"
-fi
-exit 0
-WGW
-chmod +x files/etc/wireguard/update_wg_endpoint.sh
-
-cat > files/etc/hotplug.d/iface/90-wg-endpoint <<'WGH'
-#!/bin/sh
-# 网络一通就恢复 WireGuard: endpoint 跟随当前联网方式(中继内网/公网打洞)
-# netifd 每次 ifup/ifdown 都会调用本脚本
-[ "$ACTION" = "ifup" ] || exit 0
-case "$INTERFACE" in
-	wwan|wg0|wan|lan) ;;
-	*) exit 0 ;;
-esac
-[ -x /etc/wireguard/update_wg_endpoint.sh ] || exit 0
-# 等接口地址/路由落定再改 endpoint
-( sleep 3; /etc/wireguard/update_wg_endpoint.sh >/dev/null 2>&1; \
-  logger -t wg-hotplug "ifup $INTERFACE -> $(wg show wg0 endpoints 2>/dev/null | awk '{print $2}')" ) &
-exit 0
-WGH
-chmod +x files/etc/hotplug.d/iface/90-wg-endpoint
 
 echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载 / 端口残留清理 / SSH+防火墙放通 / 升级保留清单"
