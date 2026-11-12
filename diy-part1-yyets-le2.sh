@@ -5,8 +5,10 @@ set -x
 # 1. 恢复被 fork 裁剪的 mt76 驱动包（板载双 MT7612E 需要 kmod-mt76x2）
 git clone --depth 1 --filter=blob:none --sparse -b openwrt-24.10 \
   https://github.com/immortalwrt/immortalwrt.git /tmp/immwrt
-cd /tmp/immwrt && git sparse-checkout set package/kernel/mt76
+cd /tmp/immwrt && git sparse-checkout set package/kernel/mt76 package/kernel/rtl8812au-ct
 cp -r package/kernel/mt76 $GITHUB_WORKSPACE/openwrt/package/kernel/
+# 3. 恢复 RTL8812AU(USB) 驱动包 kmod-rtl8812au-ct（fork 里没有，用于外接 8812AU USB 网卡）
+cp -r package/kernel/rtl8812au-ct $GITHUB_WORKSPACE/openwrt/package/kernel/
 cd $GITHUB_WORKSPACE/openwrt
 
 # 2. 拷贝设备 dts 到源码树
