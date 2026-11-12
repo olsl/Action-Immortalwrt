@@ -14,42 +14,38 @@ cd $GITHUB_WORKSPACE/openwrt
 # 2. 拷贝设备 dts 到源码树
 cp $GITHUB_WORKSPACE/mt7621_hoolxun_yyets_le2.dts target/linux/ramips/dts/
 
-# 2b. 状态页温度读取（MT7621 无 on-die 传感器；读无线卡/内核温度源，无源显示 N/A）
+# 2b. 状态页温度读取（MT7621 无 on-die 传感器；直读 MT7612E 温度寄存器，无源显示 5G N/A）
 mkdir -p target/linux/ramips/base-files/sbin
 cat > target/linux/ramips/base-files/sbin/tempinfo <<'EOF'
 #!/bin/sh
-# ImmortalWrt 状态页温度 - YYETs-LE2 定制
-# MT7621 CPU 无温度传感器（芯片设计）；优先读内核 thermal/hwmon，其次 mt76 无线卡温度
-T=""
-if [ -r /sys/class/thermal/thermal_zone0/temp ]; then
-	T=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
-	[ -n "$T" ] && [ "$T" -gt 1000 ] 2>/dev/null && T=$((T/1000))
-fi
-if [ -z "$T" ]; then
-	for f in /sys/class/hwmon/hwmon*/temp*_input; do
-		[ -r "$f" ] && T=$(cat "$f" 2>/dev/null) && break
-	done
-fi
-# mt76 无线卡温度（MT7612E debugfs，0=未启用）
-if [ -z "$T" ] || [ "$T" = "0" ]; then
-	mount -t debugfs none /sys/kernel/debug 2>/dev/null
-	for p in /sys/kernel/debug/ieee80211/phy*/mt76/temperature; do
-		[ -r "$p" ] || continue
-		v=$(cat "$p" 2>/dev/null | tr -d '[:space:]')
-		case "$v" in
-			''|*[!0-9]*) continue ;;
-			*) [ "$v" -ge 1 ] && [ "$v" -le 120 ] && T="$v" && break ;;
-		esac
-	done
-fi
-if [ -n "$T" ]; then
-	case "$T" in
-		*°) echo "$T" ;;
-		*) echo "${T}°C" ;;
+# LuCI 状态页温度 - YYETs-LE2 定制（MT7612E 5G 射频温度）
+# 原理：mt76 的 dev->cal.temp 依赖 eeprom 温度补偿数据，新内核下常为 0；
+#       这里直接读 MT7612E 温度传感器寄存器 MT_TEMP_SENSOR(0x1d000)，
+#       按驱动公式 temp = ((reg & 0x7f) - ref25) * 1789 / 1000 + 25 换算，
+#       ref25 取 eeprom 0x55 字节低 7 位（MT_EE_TX_POWER_EXT_PA_5G 高字节）。
+DBG=""
+for d in /sys/kernel/debug/ieee80211/phy1/mt76 /sys/kernel/debug/ieee80211/phy0/mt76; do
+	[ -d "$d" ] && DBG="$d" && break
+done
+if [ -n "$DBG" ]; then
+	echo 0x1d000 > "$DBG/regidx" 2>/dev/null
+	RAW=$(cat "$DBG/regval" 2>/dev/null)
+	BB=$(dd if="$DBG/eeprom" bs=1 skip=85 count=1 2>/dev/null | hexdump -e '1/1 "%02x"' 2>/dev/null)
+	case "$RAW" in
+	0x[0-9a-fA-F]*) : ;;
+	*) RAW="" ;;
 	esac
-else
-	echo "N/A"
+	if [ -n "$RAW" ] && [ -n "$BB" ]; then
+		VAL=$(( RAW & 0x7f ))
+		REF=$(( 0x$BB & 0x7f ))
+		T=$(( (VAL - REF) * 1789 / 1000 + 25 ))
+		if [ "$T" -ge 5 ] 2>/dev/null && [ "$T" -le 120 ]; then
+			echo "5G ${T}°C"
+			exit 0
+		fi
+	fi
 fi
+echo "5G N/A"
 EOF
 chmod +x target/linux/ramips/base-files/sbin/tempinfo
 
