@@ -36,8 +36,18 @@ chmod +x files/etc/uci-defaults/99-yyets-8188eu
 mkdir -p files/etc/board.d
 cat > files/etc/board.d/99-yyets-ports <<'EOF'
 #!/bin/sh
-# YYETs-LE2 物理 1WAN+2LAN：lan1/lan2 为 LAN，wan 为 WAN
-ucidef_set_interfaces_lan_wan "lan1 lan2" "wan"
+# YYETs-LE2 物理 1WAN+2LAN：lan1/lan2 为 LAN，wan 为 WAN。
+# 注意：board.d 脚本由 /bin/board_detect 在子 shell 中 source，取不到 ucidef_* 函数，
+#       且 ucidef_set_interface_lan 是"追加"语义（会导致 ports 越跑越多），
+#       故这里用 sed 把 network.lan.ports 收敛为 lan1/lan2。
+CFG=${CFG:-/etc/board.json}
+[ -s "$CFG" ] || exit 0
+sed -i \
+  -e '/^[[:space:]]*"lan3",*$/d' \
+  -e '/^[[:space:]]*"lan4",*$/d' \
+  -e 's/^([[:space:]]*)"lan2",/\1"lan2"/' \
+  "$CFG"
+exit 0
 EOF
 chmod +x files/etc/board.d/99-yyets-ports
 
@@ -57,5 +67,17 @@ uci -q commit network
 exit 0
 EOF
 chmod +x files/etc/uci-defaults/98-yyets-ports
+
+# SSH 可用性：确保刷机后 dropbear 开机启用、22 端口、密码登录（避免"默认关闭"）
+cat > files/etc/uci-defaults/99-yyets-ssh <<'EOF'
+#!/bin/sh
+uci -q set dropbear.main=dropbear
+uci -q set dropbear.main.PasswordAuth=on
+uci -q set dropbear.main.Port=22
+uci -q commit dropbear
+/etc/init.d/dropbear enable
+exit 0
+EOF
+chmod +x files/etc/uci-defaults/99-yyets-ssh
 
 echo "[YYETs-LE2] 定制完成: IP=192.168.8.1 / 主题=Argon / 连接数优化 / tempinfo / 8188EU延迟加载 / 端口残留清理"
